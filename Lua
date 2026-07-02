@@ -23,26 +23,26 @@ function UILibrary:CreateWindow(title)
         IgnoreGuiInset = true
     })
     
-    -- HUB REDIMENSIONADO A 485 x 345 Y FONDO NEGRO NEGRO
+    -- HUB COMPACTO (485 x 345) CON FONDO NEGRO PURO
     local MainFrame = CreateElement("Frame", {
         Name = "MainFrame",
         Parent = ScreenGui,
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0), -- Negro puro
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -242, 0.5, -172), -- Centrado perfecto para 485x345
+        Position = UDim2.new(0.5, -242, 0.5, -172), -- Centrado perfecto
         Size = UDim2.new(0, 485, 0, 345),
         ClipsDescendants = true,
         Visible = true
     })
     
     CreateElement("UICorner", {CornerRadius = UDim.new(0, 16), Parent = MainFrame})
-    CreateElement("UIStroke", {Color = Color3.fromRGB(160, 225, 255), Thickness = 2, Transparency = 0.4, Parent = MainFrame}) -- Celeste bajito en el borde
+    CreateElement("UIStroke", {Color = Color3.fromRGB(255, 60, 60), Thickness = 2, Transparency = 0.4, Parent = MainFrame}) -- Borde rojo sutil
     
-    -- BARRA SUPERIOR COLOR CELESTE BAJITO
+    -- BARRA SUPERIOR COLOR ROJO
     local TopBar = CreateElement("Frame", {
         Name = "TopBar",
         Parent = MainFrame,
-        BackgroundColor3 = Color3.fromRGB(160, 225, 255), -- Celeste muy bajito
+        BackgroundColor3 = Color3.fromRGB(215, 45, 45), -- Rojo vivo pero agradable
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 50)
     })
@@ -50,7 +50,7 @@ function UILibrary:CreateWindow(title)
     
     local TopBarFill = CreateElement("Frame", {
         Parent = TopBar,
-        BackgroundColor3 = Color3.fromRGB(160, 225, 255),
+        BackgroundColor3 = Color3.fromRGB(215, 45, 45),
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 0, 35),
         Size = UDim2.new(1, 0, 0, 15)
@@ -63,14 +63,14 @@ function UILibrary:CreateWindow(title)
         Size = UDim2.new(0.6, 0, 1, 0),
         Font = Enum.Font.GothamBlack,
         Text = title or "UI Library",
-        TextColor3 = Color3.fromRGB(20, 40, 60), -- Texto oscuro para resaltar
+        TextColor3 = Color3.fromRGB(255, 255, 255), -- Texto blanco para que resalte en el rojo
         TextSize = 20,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     
     local CloseButton = CreateElement("TextButton", {
         Parent = TopBar,
-        BackgroundColor3 = Color3.fromRGB(255, 100, 100),
+        BackgroundColor3 = Color3.fromRGB(160, 30, 30), -- Rojo más oscuro para el botón
         BorderSizePixel = 0,
         Position = UDim2.new(1, -45, 0.5, -15),
         Size = UDim2.new(0, 30, 0, 30),
@@ -83,7 +83,7 @@ function UILibrary:CreateWindow(title)
     
     local MinimizeButton = CreateElement("TextButton", {
         Parent = TopBar,
-        BackgroundColor3 = Color3.fromRGB(255, 200, 80),
+        BackgroundColor3 = Color3.fromRGB(230, 150, 40),
         BorderSizePixel = 0,
         Position = UDim2.new(1, -85, 0.5, -15),
         Size = UDim2.new(0, 30, 0, 30),
@@ -121,13 +121,14 @@ function UILibrary:CreateWindow(title)
         Size = UDim2.new(1, -160, 1, -70)
     })
     
-    -- Arrastre del HUB
+    -- SCRIPT DE ARRASTRE DE LA BARRA MEJORADO
     local dragging, dragStart, startPos
     TopBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = MainFrame.Position
+            
             local connection
             connection = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
@@ -145,16 +146,16 @@ function UILibrary:CreateWindow(title)
         end
     end)
     
-    CloseButton.MouseEnter:Connect(function() TweenService:Create(CloseButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 120, 120)}):Play() end)
-    CloseButton.MouseLeave:Connect(function() TweenService:Create(CloseButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 100, 100)}):Play() end)
+    CloseButton.MouseEnter:Connect(function() TweenService:Create(CloseButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(190, 40, 40)}):Play() end)
+    CloseButton.MouseLeave:Connect(function() TweenService:Create(CloseButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(160, 30, 30)}):Play() end)
     CloseButton.MouseButton1Click:Connect(function()
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
         task.wait(0.3)
         ScreenGui:Destroy()
-    end)
+        end)
     
-    MinimizeButton.MouseEnter:Connect(function() TweenService:Create(MinimizeButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 220, 100)}):Play() end)
-    MinimizeButton.MouseLeave:Connect(function() TweenService:Create(MinimizeButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 200, 80)}):Play() end)
+    MinimizeButton.MouseEnter:Connect(function() TweenService:Create(MinimizeButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(250, 170, 60)}):Play() end)
+    MinimizeButton.MouseLeave:Connect(function() TweenService:Create(MinimizeButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(230, 150, 40)}):Play() end)
     MinimizeButton.MouseButton1Click:Connect(function()
         Minimized = not Minimized
         TabContainer.Visible = not Minimized
@@ -169,28 +170,28 @@ function UILibrary:CreateWindow(title)
     function window:SwitchToTab(tabToSelect)
         for _, tab in pairs(tabs) do
             tab.Page.Visible = false
-            -- Pestaña inactiva: mantiene el celeste pero el texto se vuelve semi-transparente para indicar inactividad
-            TweenService:Create(tab.Button, TweenInfo.new(0.2), {BackgroundTransparency = 0.4, TextColor3 = Color3.fromRGB(50, 70, 90)}):Play()
+            -- Pestaña inactiva: conserva el rojo pero más transparente
+            TweenService:Create(tab.Button, TweenInfo.new(0.2), {BackgroundTransparency = 0.4, TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
         end
         tabToSelect.Page.Visible = true
-        -- Pestaña activa: Celeste brillante y texto completamente visible y oscuro
-        TweenService:Create(tabToSelect.Button, TweenInfo.new(0.2), {BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(20, 40, 60)}):Play()
+        -- Pestaña activa: Rojo sólido y texto blanco visible
+        TweenService:Create(tabToSelect.Button, TweenInfo.new(0.2), {BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
     end
     
     function window:CreateTab(name)
         local tab = {}
         
-        -- BOTONES DE PESTAÑAS (SIEMPRE CELESTE BAJITO)
+        -- PESTAÑAS SIEMPRE ROJAS
         local tabButton = CreateElement("TextButton", {
             Name = name .. "Tab",
             Parent = TabContainer,
-            BackgroundColor3 = Color3.fromRGB(160, 225, 255), -- Celeste bajo permanente
-            BackgroundTransparency = 0.4, -- Opaco por defecto si no está activa
+            BackgroundColor3 = Color3.fromRGB(215, 45, 45), -- Rojo
+            BackgroundTransparency = 0.4,
             BorderSizePixel = 0,
             Size = UDim2.new(1, 0, 0, 38),
             Font = Enum.Font.GothamBold,
             Text = name,
-            TextColor3 = Color3.fromRGB(50, 70, 90),
+            TextColor3 = Color3.fromRGB(150, 150, 150),
             TextSize = 14
         })
         CreateElement("UICorner", {CornerRadius = UDim.new(0, 10), Parent = tabButton})
@@ -201,7 +202,7 @@ function UILibrary:CreateWindow(title)
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 1, 0),
             ScrollBarThickness = 4,
-            ScrollBarImageColor3 = Color3.fromRGB(160, 225, 255),
+            ScrollBarImageColor3 = Color3.fromRGB(215, 45, 45), -- Barra de desplazamiento roja
             Visible = false
         })
         CreateElement("UIListLayout", {Parent = page, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10)})
@@ -212,13 +213,13 @@ function UILibrary:CreateWindow(title)
         
         tabButton.MouseEnter:Connect(function()
             if not page.Visible then 
-                TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(20, 40, 60)}):Play() 
+                TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play() 
             end
         end)
         
         tabButton.MouseLeave:Connect(function()
             if not page.Visible then 
-                TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.4, TextColor3 = Color3.fromRGB(50, 70, 90)}):Play() 
+                TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.4, TextColor3 = Color3.fromRGB(150, 150, 150)}):Play() 
             end
         end)
         
@@ -235,10 +236,10 @@ function UILibrary:CreateWindow(title)
                 Text = text,
                 TextColor3 = Color3.fromRGB(255, 255, 255),
                 TextSize = 14,
-                LayoutOrder = #page:GetChildren()
+                LayoutOrder = #page: GetChildren()
             })
             CreateElement("UICorner", {CornerRadius = UDim.new(0, 10), Parent = button})
-            local buttonStroke = CreateElement("UIStroke", {Color = Color3.fromRGB(160, 225, 255), Thickness = 1.5, Transparency = 0.7, Parent = button})
+            local buttonStroke = CreateElement("UIStroke", {Color = Color3.fromRGB(215, 45, 45), Thickness = 1.5, Transparency = 0.7, Parent = button}) -- Borde rojo
             
             button.MouseEnter:Connect(function()
                 TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
@@ -302,8 +303,8 @@ function UILibrary:CreateWindow(title)
             toggleButton.MouseButton1Click:Connect(function()
                 toggled = not toggled
                 if toggled then
-                    TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(160, 225, 255)}):Play()
-                    TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.fromRGB(20, 40, 60)}):Play()
+                    TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(215, 45, 45)}):Play() -- Alternar a rojo
+                    TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
                 else
                     TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
                     TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Color3.fromRGB(130, 130, 130)}):Play()
@@ -347,7 +348,7 @@ function UILibrary:CreateWindow(title)
                 TextSize = 13
             })
             CreateElement("UICorner", {CornerRadius = UDim.new(0, 8), Parent = keybindButton})
-            local keybindStroke = CreateElement("UIStroke", {Color = Color3.fromRGB(160, 225, 255), Thickness = 1.5, Transparency = 0.7, Parent = keybindButton})
+            local keybindStroke = CreateElement("UIStroke", {Color = Color3.fromRGB(215, 45, 45), Thickness = 1.5, Transparency = 0.7, Parent = keybindButton}) -- Borde rojo
             
             local currentKey = nil
             local waiting = false
@@ -423,7 +424,7 @@ function UILibrary:CreateWindow(title)
             
             local fill = CreateElement("Frame", {
                 Parent = sliderBar,
-                BackgroundColor3 = Color3.fromRGB(160, 225, 255),
+                BackgroundColor3 = Color3.fromRGB(215, 45, 45), -- Relleno rojo
                 BorderSizePixel = 0,
                 Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
             })
