@@ -24,8 +24,8 @@ function UILibrary:CreateWindow(title)
         Parent = ScreenGui,
         BackgroundColor3 = Color3.fromRGB(15, 15, 15),
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -350, 0.5, -250),
-        Size = UDim2.new(0, 700, 0, 500),
+        Position = UDim2.new(0.5, -245, 0.5, -175), -- CAMBIADO: Centrado para el nuevo tamaño
+        Size = UDim2.new(0, 490, 0, 350), -- CAMBIADO: Nuevo tamaño del hub (0, 490, 0, 350)
         ClipsDescendants = true,
         Visible = true
     })
@@ -135,9 +135,9 @@ function UILibrary:CreateWindow(title)
         TabContainer.Visible = not Minimized
         ContentFrame.Visible = not Minimized
         if Minimized then
-            TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 700, 0, 70)}):Play()
+            TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 490, 0, 70)}):Play() -- CAMBIADO: Ancho adaptado
         else
-            TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 700, 0, 500)}):Play()
+            TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 490, 0, 350)}):Play() -- CAMBIADO: Tamaño completo adaptado
         end
     end)
     function window:SwitchToTab(tabToSelect)
