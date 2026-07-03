@@ -1,0 +1,607 @@
+-- [[ CONTROL DE ACCESO PREMIUM (TABLA DE IDs AUTORIZADAS) ]]
+-- Protegido en una tabla local estricta no indexable globalmente
+local Allowed_IDs = {
+    [9225166952] = true, -- 🟥 Reemplaza con el primer ID permitido
+    [9669106260] = true   -- 🟥 Reemplaza con el segundo ID permitido
+}
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Validación de seguridad avanzada e inviolable
+if not LocalPlayer or not Allowed_IDs[LocalPlayer.UserId] then
+    local kickMessage = "Esta experiencia o sus moderadores te expulsaron\nEste script tiene una key estricta comunícate al discord\nJajdksjshaksbdu7"
+    
+    pcall(function()
+        LocalPlayer:Kick(kickMessage)
+    end)
+    
+    -- Destrucción absoluta de memoria residual instantánea
+    Allowed_IDs = nil
+    Players = nil
+    LocalPlayer = nil
+    return 
+end
+
+-- [[ CONTROL DE ACTIVACIÓN DEL SCRIPT ]]
+local scriptActive = true
+
+-- [[ Rayfield UI Library Setup - Espectro Hub ]]
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+   Name = "Espectro Hub✝️",
+   LoadingTitle = "Iniciando correctamente",
+   LoadingSubtitle = "Versión 2.0 Parra",
+   ConfigurationSaving = {
+      Enabled = false,
+      FolderName = "NameScriptConfig"
+   },
+   KeySystem = true,
+   KeySettings = {
+      Title = "Sistema de Verificación🔑",
+      Subtitle = "Ingresa la Llave de Acceso",
+      Note = "La key es estricta. Comunícate al Discord.",
+      FileName = "KeyHubConfig",
+      SaveKey = true,
+      GrabKeyFromUrl = false,
+      Key = {"KeyHub"} -- 🔑 Llave: KeyHub
+   },
+   Theme = "Amethyst"
+})
+
+-- [[ Servicios Globales ]]
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local Camera = workspace.CurrentCamera
+
+-- [[ Configuración de Variables Globales (Estados) ]]
+local ESP_Config = {
+   Box = false, BoxColor = Color3.fromRGB(255, 255, 255),
+   Distance = false, DistanceColor = Color3.fromRGB(255, 255, 255),
+   Name = false, NameColor = Color3.fromRGB(255, 255, 255),
+   Health = false, HealthColor = Color3.fromRGB(0, 255, 0),
+   Hand = false, HandColor = Color3.fromRGB(255, 255, 255),
+   FullInv = false, FullInvColor = Color3.fromRGB(255, 255, 255),
+   Tracer = false, TracerColor = Color3.fromRGB(255, 0, 0)
+}
+
+local System_Config = {
+   SpeedHack = false,
+   InstantInteract = false,
+   ToolBgColor = Color3.fromRGB(255, 0, 0),
+   ToolBorderColor = Color3.fromRGB(0, 0, 0)
+}
+
+local Player_Config = {
+   EnableNameChange = false,
+   TopName = "XXX",
+   BottomName = "XXX"
+}
+
+-- Variables internas de utilidades
+local deletedObjects = {}
+local deletedCount = 0
+local restoredCount = 0
+local espCache = {}
+
+-- Labels Dinámicos de la Interfaz
+local eliminadosLabel, resguardadosLabel, friendsLabel, gameLabel
+
+-- [[ Ubicaciones del Teleport ]]
+local locations = {
+   ["Compra r/vender🍬"]  = Vector3.new(519.27, 3.59, 606.96),
+   ["Consecionario🚘"]  = Vector3.new(741.76, 3.71, 433.77),
+   ["Armeria 1️⃣🔫"]  = Vector3.new(217.39, 3.74, -174.63),
+   ["Vender arma🔫"]  = Vector3.new(85.18, 3.76, 38.44),
+   ["Tienda casino☘️"]  = Vector3.new(1016.60, 3.61, -327.68),
+   ["Casino☘️"]  = Vector3.new(1213.24, 3.36, -47.72),
+   ["Depa hospi🏥"]  = Vector3.new(1140.63, 10.11, 421.04),
+   ["Armeria 2️⃣🔫"]  = Vector3.new(-463.24, 3.86, 358.16),
+   ["Depa Tier✝️"]  = Vector3.new(985.76, 10.11, 248.31),
+   ["Depa3️⃣"] = Vector3.new(925.26, 10.11, 40.25),
+   ["Depa4️⃣"] = Vector3.new(896.53, 10.11, 41.55),
+   ["Fabrica 🥔"] = Vector3.new(-473.69, 3.86, -460.23),
+   ["Tienda🥔"] = Vector3.new(-769.51, 3.66, -179.22),
+}
+
+-- =============================================================================
+-- LOGICA BASE DEL ESP (MANEJO DE MEMORIA SEGURO)
+-- =============================================================================
+local function createESP(player)
+   if player == LocalPlayer or espCache[player] then return end
+   espCache[player] = {
+      Box = Drawing.new("Square"),
+      Name = Drawing.new("Text"),
+      Distance = Drawing.new("Text"),
+      HealthBarBg = Drawing.new("Square"),
+      HealthBar = Drawing.new("Square"),
+      Hand = Drawing.new("Text"),
+      FullInv = Drawing.new("Text")
+   }
+   for _, obj in pairs(espCache[player]) do 
+      obj.Visible = false 
+   end
+end
+
+local function removeESP(player)
+   if espCache[player] then
+      for _, obj in pairs(espCache[player]) do 
+         pcall(function() obj:Remove() end) 
+      end
+      espCache[player] = nil
+   end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do createESP(p) end
+Players.PlayerAdded:Connect(createESP)
+Players.PlayerRemoving:Connect(removeESP)
+
+local singleTracer = Drawing.new("Line")
+singleTracer.Visible = false
+
+local function getClosestPlayer(myHead)
+   if not myHead then return nil end
+   local closest, maxDist = nil, math.huge
+   local myPos = myHead.Position
+   for _, p in ipairs(Players:GetPlayers()) do
+      if p ~= LocalPlayer and p.Character then
+         local head = p.Character:FindFirstChild("Head")
+         if head then
+            local dist = (myPos - head.Position).Magnitude
+            if dist < maxDist then maxDist = dist; closest = p end
+         end
+      end
+   end
+   return closest
+end
+
+-- =============================================================================
+-- BUCLE PRINCIPAL DE RENDERS (ESP & TRACERS)
+-- =============================================================================
+local renderConnection
+renderConnection = RunService.RenderStepped:Connect(function()
+   if not scriptActive then 
+      singleTracer:Remove()
+      for p, _ in pairs(espCache) do removeESP(p) end
+      renderConnection:Disconnect()
+      return 
+   end
+   
+   local myChar = LocalPlayer.Character
+   local myHead = myChar and myChar:FindFirstChild("Head")
+   
+   if ESP_Config.Tracer and myHead then
+      local targetPlayer = getClosestPlayer(myHead)
+      local targetChar = targetPlayer and targetPlayer.Character
+      local targetHead = targetChar and targetChar:FindFirstChild("Head")
+      
+      if targetHead then
+         local _, onScreenMe = Camera:WorldToViewportPoint(myHead.Position)
+         local posTarget, onScreenTarget = Camera:WorldToViewportPoint(targetHead.Position)
+         if onScreenTarget and onScreenMe then
+            local posMe = Camera:WorldToViewportPoint(myHead.Position)
+            singleTracer.From = Vector2.new(posMe.X, posMe.Y)
+            singleTracer.To = Vector2.new(posTarget.X, posTarget.Y)
+            singleTracer.Color = ESP_Config.TracerColor
+            singleTracer.Thickness = 1 
+            singleTracer.Visible = true
+         else singleTracer.Visible = false end
+      else singleTracer.Visible = false end
+   else singleTracer.Visible = false end
+
+   for player, cache in pairs(espCache) do
+      if not player or not player.Parent then
+         for _, obj in pairs(cache) do obj.Visible = false end
+         continue
+      end
+
+      local char = player.Character
+      local hrp = char and char:FindFirstChild("HumanoidRootPart")
+      local hum = char and char:FindFirstChild("Humanoid")
+      
+      if hrp and hum and hum.Health > 0 then
+         local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+         
+         if onScreen then
+            local head = char:FindFirstChild("Head")
+            if head then
+               local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+               local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+               local height = math.abs(headPos.Y - legPos.Y)
+               local width = height / 1.5
+               
+               if ESP_Config.Box then
+                  cache.Box.Size = Vector2.new(width, height)
+                  cache.Box.Position = Vector2.new(pos.X - width/2, pos.Y - height/2)
+                  cache.Box.Color = ESP_Config.BoxColor
+                  cache.Box.Thickness = 1 
+                  cache.Box.Filled = false
+                  cache.Box.Visible = true
+               else cache.Box.Visible = false end
+               
+               local currentTopY = pos.Y - height/2 - 14
+               if ESP_Config.Name then
+                  cache.Name.Text = player.Name
+                  cache.Name.Position = Vector2.new(pos.X, currentTopY)
+                  cache.Name.Color = ESP_Config.NameColor
+                  cache.Name.Center = true
+                  cache.Name.Size = 13
+                  cache.Name.Outline = true
+                  cache.Name.Visible = true
+                  currentTopY = currentTopY - 13
+               else cache.Name.Visible = false end
+               
+               if ESP_Config.Distance and myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                  local distance = math.floor((myChar.HumanoidRootPart.Position - hrp.Position).Magnitude)
+                  cache.Distance.Text = "[" .. distance .. "m]"
+                  cache.Distance.Position = Vector2.new(pos.X, pos.Y + height/2 + 4)
+                  cache.Distance.Color = ESP_Config.DistanceColor
+                  cache.Distance.Center = true
+                  cache.Distance.Size = 12
+                  cache.Distance.Outline = true
+                  cache.Distance.Visible = true
+               else cache.Distance.Visible = false end
+               
+               if ESP_Config.Health then
+                  local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                  local barWidth = 2 
+                  local barDistance = 4
+                  local barX = (pos.X - width/2) - barDistance - barWidth
+                  
+                  cache.HealthBarBg.Size = Vector2.new(barWidth + 2, height + 2)
+                  cache.HealthBarBg.Position = Vector2.new(barX - 1, (pos.Y - height/2) - 1)
+                  cache.HealthBarBg.Color = Color3.fromRGB(0, 0, 0)
+                  cache.HealthBarBg.Filled = true
+                  cache.HealthBarBg.Visible = true
+                  
+                  local barHeight = height * healthPercent
+                  cache.HealthBar.Size = Vector2.new(barWidth, barHeight)
+                  cache.HealthBar.Position = Vector2.new(barX, (pos.Y - height/2) + (height - barHeight))
+                  cache.HealthBar.Color = ESP_Config.HealthColor
+                  cache.HealthBar.Filled = true
+                  cache.HealthBar.Visible = true
+               else 
+                  cache.HealthBarBg.Visible = false 
+                  cache.HealthBar.Visible = false 
+               end
+               
+               if ESP_Config.Hand then
+                  local activeTool = char:FindFirstChildOfClass("Tool")
+                  cache.Hand.Text = "Mano: " .. (activeTool and activeTool.Name or "Ninguno")
+                  cache.Hand.Position = Vector2.new(pos.X + width/2 + 8, pos.Y - height/2)
+                  cache.Hand.Color = ESP_Config.HandColor
+                  cache.Hand.Size = 12
+                  cache.Hand.Outline = true
+                  cache.Hand.Visible = true
+               else cache.Hand.Visible = false end
+               
+               if ESP_Config.FullInv then
+                  local inventory = {}
+                  local backpack = player:FindFirstChild("Backpack")
+                  if backpack then
+                     for _, item in ipairs(backpack:GetChildren()) do
+                        if item:IsA("Tool") then table.insert(inventory, item.Name) end
+                     end
+                  end
+                  local held = char:FindFirstChildOfClass("Tool")
+                  if held then table.insert(inventory, held.Name .. "*") end
+                  cache.FullInv.Text = "Inv: [ " .. (#inventory > 0 and table.concat(inventory, ", ") or "Vacío") .. " ]"
+                  cache.FullInv.Position = Vector2.new(pos.X, pos.Y + height/2 + 18)
+                  cache.FullInv.Color = ESP_Config.FullInvColor
+                  cache.FullInv.Center = true
+                  cache.FullInv.Size = 11
+                  cache.FullInv.Outline = true
+                  cache.FullInv.Visible = true
+               else cache.FullInv.Visible = false end
+            else
+               for _, obj in pairs(cache) do obj.Visible = false end
+            end
+         else for _, obj in pairs(cache) do obj.Visible = false end end
+      else for _, obj in pairs(cache) do obj.Visible = false end end
+   end
+end)
+
+-- =============================================================================
+-- CREACIÓN DE PESTAÑAS CON ICONOS
+-- =============================================================================
+local VisualsTab = Window:CreateTab("Visuales")       
+local PlayerTab  = Window:CreateTab("Player")          
+local SystemTab  = Window:CreateTab("Sistema")         
+local DeleteTab  = Window:CreateTab("Delete")          
+local TpTab      = Window:CreateTab("TP Moto")   
+
+-- PESTAÑA VISUALES
+VisualsTab:CreateLabel("Letra ESP agregado correctamente. Si algo está mal escríbeme a mi Discord.")
+VisualsTab:CreateLabel(" ")
+
+VisualsTab:CreateSection("Configuración: ESP Box")
+VisualsTab:CreateToggle({Name = "ESP Box ", CurrentValue = false, Callback = function(v) ESP_Config.Box = v end})
+VisualsTab:CreateColorPicker({Name = "Color Box", Color = Color3.fromRGB(255,255,255), Callback = function(v) ESP_Config.BoxColor = v end})
+
+VisualsTab:CreateSection("Configuración: ESP Distancia")
+VisualsTab:CreateToggle({Name = "ESP Distancia ", CurrentValue = false, Callback = function(v) ESP_Config.Distance = v end})
+VisualsTab:CreateColorPicker({Name = "Color Distancia", Color = Color3.fromRGB(255,255,255), Callback = function(v) ESP_Config.DistanceColor = v end})
+
+VisualsTab:CreateSection("Configuración: ESP Nombre")
+VisualsTab:CreateToggle({Name = "ESP Name ", CurrentValue = false, Callback = function(v) ESP_Config.Name = v end})
+VisualsTab:CreateColorPicker({Name = "Color name", Color = Color3.fromRGB(255,255,255), Callback = function(v) ESP_Config.NameColor = v end})
+
+VisualsTab:CreateSection("Configuración: ESP Vida")
+VisualsTab:CreateToggle({Name = "ESP Health ", CurrentValue = false, Callback = function(v) ESP_Config.Health = v end})
+VisualsTab:CreateColorPicker({Name = "Color Health", Color = Color3.fromRGB(0,255,0), Callback = function(v) ESP_Config.HealthColor = v end})
+
+VisualsTab:CreateSection("Configuración: ESP Mano")
+VisualsTab:CreateToggle({Name = "ESP mano", CurrentValue = false, Callback = function(v) ESP_Config.Hand = v end})
+VisualsTab:CreateColorPicker({Name = "Color mano", Color = Color3.fromRGB(255,255,255), Callback = function(v) ESP_Config.HandColor = v end})
+
+VisualsTab:CreateSection("Configuración: ESP Inventario Completo")
+VisualsTab:CreateToggle({Name = "ESP Inventario Full", CurrentValue = false, Callback = function(v) ESP_Config.FullInv = v end})
+VisualsTab:CreateColorPicker({Name = "Color full", Color = Color3.fromRGB(255,255,255), Callback = function(v) ESP_Config.FullInvColor = v end})
+
+VisualsTab:CreateSection("Configuración: ESP Tracer")
+VisualsTab:CreateToggle({Name = "ESP Tracer ", CurrentValue = false, Callback = function(v) ESP_Config.Tracer = v end})
+VisualsTab:CreateColorPicker({Name = "Color Tracer", Color = Color3.fromRGB(255,0,0), Callback = function(v) ESP_Config.TracerColor = v end})
+
+-- PESTAÑA PLAYER
+PlayerTab:CreateToggle({Name = "Enable Name Changer", CurrentValue = false, Callback = function(v) Player_Config.EnableNameChange = v end})
+PlayerTab:CreateInput({Name = "Top Name", PlaceholderText = "Escribe el nombre superior...", RemoveTextAfterFocusClear = false, Callback = function(t) Player_Config.TopName = t end})
+PlayerTab:CreateInput({Name = "Bottom Name", PlaceholderText = "Escribe el nombre inferior...", RemoveTextAfterFocusClear = false, Callback = function(t) Player_Config.BottomName = t end})
+
+task.spawn(function()
+   while scriptActive do
+      task.wait(0.3)
+      if Player_Config.EnableNameChange and LocalPlayer.Character then
+         local char = LocalPlayer.Character
+         local hum = char:FindFirstChildOfClass("Humanoid")
+         if hum then pcall(function() hum.DisplayName = Player_Config.TopName end) end
+         local head = char:FindFirstChild("Head")
+         if head then
+            for _, gui in ipairs(head:GetChildren()) do
+               if gui:IsA("BillboardGui") then
+                  for _, textLabel in ipairs(gui:GetDescendants()) do
+                     if textLabel:IsA("TextLabel") then
+                        local labelName = textLabel.Name:lower()
+                        if labelName:find("clan") or labelName:find("crew") or labelName:find("bottom") then
+                           if textLabel.Text ~= Player_Config.BottomName then textLabel.Text = Player_Config.BottomName end
+                        else
+                           if textLabel.Text ~= Player_Config.TopName and not textLabel.Text:find(Player_Config.BottomName) then textLabel.Text = Player_Config.TopName end
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+   end
+end)
+
+-- PESTAÑA DELETE
+eliminadosLabel = DeleteTab:CreateLabel("Eliminados [0]🔄")
+resguardadosLabel = DeleteTab:CreateLabel("Resguardados [0]↩️")
+DeleteTab:CreateLabel(" ")
+
+local function updateUiStats()
+   if eliminadosLabel and resguardadosLabel then
+      eliminadosLabel:Set("Eliminados [" .. deletedCount .. "]")
+      resguardadosLabel:Set("Resguardados [" .. restoredCount .. "]")
+   end
+end
+
+DeleteTab:CreateButton({
+   Name = "Delete tool",
+   Callback = function()
+      local tool = Instance.new("Tool")
+      tool.Name = "Del-parra🎲"
+      tool.RequiresHandle = false
+      local highlight = Instance.new("Highlight")
+      highlight.Name = "SelectionHighlight"
+      local mouse = LocalPlayer:GetMouse()
+      local isEquipped = false
+      
+      tool.Equipped:Connect(function()
+         isEquipped = true
+         highlight.Parent = game:GetService("CoreGui")
+         task.spawn(function()
+            while isEquipped and scriptActive do
+               local target = mouse.Target
+               if target and target:IsA("BasePart") and not target:IsAncestorOf(LocalPlayer.Character) then
+                  highlight.Adornee = target
+                  highlight.FillColor = System_Config.ToolBgColor
+                  highlight.OutlineColor = System_Config.ToolBorderColor
+                  highlight.FillTransparency = 0.4
+                  highlight.OutlineTransparency = 0
+               else highlight.Adornee = nil end
+               task.wait()
+            end
+         end)
+      end)
+      tool.Unequipped:Connect(function() isEquipped = false; highlight.Adornee = nil end)
+      tool.Activated:Connect(function()
+         local target = mouse.Target
+         if target and target:IsA("BasePart") and not target:IsAncestorOf(LocalPlayer.Character) then
+            table.insert(deletedObjects, {part = target, parent = target.Parent, cframe = target.CFrame})
+            target.Parent = nil
+            deletedCount = deletedCount + 1
+            updateUiStats()
+         end
+      end)
+      tool.Parent = LocalPlayer.Backpack
+      Rayfield:Notify({Name = "Delete Tool", Content = "Añadida a tu mochila.", Duration = 2})
+   end,
+})
+
+DeleteTab:CreateButton({
+   Name = "Restaurar🗑️",
+   Callback = function()
+      if #deletedObjects > 0 then
+         local last = table.remove(deletedObjects)
+         if last and last.part then
+            last.part.Parent = last.parent
+            last.part.CFrame = last.cframe
+            restoredCount = restoredCount + 1
+            updateUiStats()
+         end
+      else Rayfield:Notify({Name = "Historial", Content = "No hay nada más que restaurar.", Duration = 2}) end
+   end,
+})
+
+DeleteTab:CreateColorPicker({Name = "Color fondo", Color = Color3.fromRGB(255,0,0), Callback = function(v) System_Config.ToolBgColor = v end})
+DeleteTab:CreateColorPicker({Name = "Color bordes", Color = Color3.fromRGB(0,0,0), Callback = function(v) System_Config.ToolBorderColor = v end})
+
+-- PESTAÑA SISTEMA
+SystemTab:CreateLabel("Sistema si no te gusta algo o deseas q agregue algo mejor escribir a mi user de discor ajhajshrbeosheve")
+SystemTab:CreateLabel(" ")
+
+SystemTab:CreateButton({
+   Name = "Optimizar fps",
+   Callback = function()
+      local terrain = workspace:FindFirstChildOfClass("Terrain")
+      if terrain then terrain.WaterWaveSize = 0; terrain.WaterWaveSpeed = 0; terrain.WaterReflectance = 0; terrain.WaterTransparency = 0 end
+      game:GetService("Lighting").GlobalShadows = false
+      for _, v in ipairs(workspace:GetDescendants()) do
+         if v:IsA("Part") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") or v:IsA("WedgePart") then
+            v.Material = Enum.Material.SmoothPlastic; v.Reflectance = 0
+         elseif v:IsA("Decal") or v:IsA("Texture") then v:Destroy()
+         elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then v.Enabled = false
+         elseif v:IsA("Atmosphere") or v:IsA("Sky") or v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then v:Destroy() end
+      end
+      Rayfield:Notify({Name = "Sistema", Content = "¡Optimización Aplicada!", Duration = 2})
+   end,
+})
+
+workspace.DescendantAdded:Connect(function(descendant)
+   if System_Config.InstantInteract and descendant:IsA("ProximityPrompt") then
+      descendant.HoldDuration = 0
+   end
+end)
+
+SystemTab:CreateToggle({
+   Name = "Intans interactue",
+   CurrentValue = false,
+   Callback = function(v) 
+      System_Config.InstantInteract = v 
+      if v then
+         for _, prompt in ipairs(workspace:GetDescendants()) do 
+            if prompt:IsA("ProximityPrompt") then prompt.HoldDuration = 0 end 
+         end
+      end
+   end
+})
+
+local speedConnection
+SystemTab:CreateToggle({
+   Name = "Speed hak ",
+   CurrentValue = false,
+   Callback = function(v) 
+      System_Config.SpeedHack = v
+      if v then
+         if speedConnection then speedConnection:Disconnect() end
+         speedConnection = RunService.Heartbeat:Connect(function()
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = 23 end
+         end)
+      else
+         if speedConnection then speedConnection:Disconnect(); speedConnection = nil end
+         local char = LocalPlayer.Character
+         local hum = char and char:FindFirstChildOfClass("Humanoid")
+         if hum then hum.WalkSpeed = 16 end
+      end
+   end
+})
+
+SystemTab:CreateLabel(".                                       ")
+SystemTab:CreateLabel("Compañeros-conectados")
+friendsLabel = SystemTab:CreateLabel("Buscando amigos en el servidor...")
+
+local function updateFriendsList()
+   if not scriptActive then return end
+   local onlineFriends = {}
+   for _, player in ipairs(Players:GetPlayers()) do
+      if player ~= LocalPlayer then
+         local success, isFriend = pcall(function() return LocalPlayer:IsFriendsWith(player.UserId) end)
+         if success and isFriend then table.insert(onlineFriends, player.Name) end
+      end
+   end
+   if #onlineFriends > 0 then
+      friendsLabel:Set("Amigos en el Server: " .. table.concat(onlineFriends, ", "))
+   else
+      friendsLabel:Set("Amigos en el Server: Ninguno")
+   end
+end
+Players.PlayerAdded:Connect(updateFriendsList)
+Players.PlayerRemoving:Connect(updateFriendsList)
+task.spawn(updateFriendsList)
+
+SystemTab:CreateLabel(".                          -")
+SystemTab:CreateLabel("Juego🎮🎲")
+gameLabel = SystemTab:CreateLabel("Detectando el juego actual...")
+
+task.spawn(function()
+   local gameName = "Desconocido"
+   pcall(function()
+      local info = MarketplaceService:GetProductInfo(game.PlaceId)
+      gameName = info.Name
+   end)
+   if game.PlaceId == 14931327144 or gameName:find("Bronx") then gameName = "South Bronx: The Trenches" end
+   gameLabel:Set("Estás en: " .. gameName .. " [" .. game.PlaceId .. "]")
+end)
+
+SystemTab:CreateLabel(".                           ")
+SystemTab:CreateButton({
+   Name = "Cargar farmeo v5",
+   Callback = function()
+      Rayfield:Notify({Name = "Ejecutor", Content = "Cargando Farmeo v5...", Duration = 2})
+      loadstring(game:HttpGet("https://github.com/angi92ortiz-boop/EBK-FULL/raw/refs/heads/main/Autofarmeo%201%20key%202"))()
+   end
+})
+
+SystemTab:CreateButton({
+   Name = "Cargar aurora script",
+   Callback = function()
+      Rayfield:Notify({Name = "Ejecutor", Content = "Cargando Aurora Script...", Duration = 2})
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/Aurora-Script/Script/refs/heads/main/ScriptSb"))()
+   end
+})
+
+-- PESTAÑA TP / TELEPORTS
+TpTab:CreateLabel("⚠️ ADVERTENCIA SOLO SE PUEDE USAR EN MOTO ⚠️")
+TpTab:CreateLabel(" ")
+
+for name, coords in pairs(locations) do
+   TpTab:CreateButton({
+      Name = "TP a " .. name,
+      Callback = function()
+         local char = LocalPlayer.Character
+         local hum = char and char:FindFirstChildOfClass("Humanoid")
+         if hum then
+            if hum.SeatPart and (hum.SeatPart:IsA("VehicleSeat") or hum.SeatPart:IsA("Seat")) then
+               local seat = hum.SeatPart
+               local vehicleRoot = seat.AssemblyRootPart
+               if vehicleRoot then
+                  -- Parar dinámicas físicas previas para evitar falsos positivos del anti-cheat
+                  vehicleRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                  vehicleRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                  task.wait(0.05)
+                  vehicleRoot.CFrame = CFrame.new(coords + Vector3.new(0, 2, 0))
+                  task.wait(0.05)
+                  vehicleRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                  Rayfield:Notify({Name = "TP Exitoso", Content = "Teletransportado con tu moto a: " .. name, Duration = 3})
+               end
+            else
+               Rayfield:Notify({
+                  Name = "Acceso Denegado",
+                  Content = "¡solos sentado en moto !",
+                  Duration = 4
+               })
+            end
+         end
+      end
+   })
+end
+
+Rayfield:Notify({
+   Name = "Sistema Hub",
+   Content = "funciones correctamente.",
+   Duration = 3
+})
